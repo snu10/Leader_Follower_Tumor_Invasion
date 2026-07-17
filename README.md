@@ -50,6 +50,73 @@ Enabled by `DurRec = 1` (recorded every `Rec_dT`). For each snapshot it computes
 > runs when `DurRec = 1`. Set it to `1` to record the metrics above during a run.
 
 
+## Data availability
+
+The metrics above, recorded for **282 simulated conditions**, are deposited as
+[`RawData.mat`](RawData.mat) (1.2 MB) and can be replotted with
+[`DataInvestigate.m`](DataInvestigate.m) without re-running any simulation.
+
+### Reproducing the figures
+
+From this folder, in MATLAB:
+
+```matlab
+DataInvestigate
+```
+
+Two switches at the top of [`DataInvestigate.m`](DataInvestigate.m) select the panel:
+
+- **`ViewMode`** — which comparison to draw:
+  1. Result vs. ECM density (fixed CA and CTX, final time)
+  2. Heatmap over ECM density and time (fixed CA and CTX)
+  3. Result vs. time (fixed CA, CTX, and ECM)
+  4. Result vs. CA configuration (fixed ECM)
+- **`CmpRes`** — which quantity to draw: `1` total tumor mass, `2` live tumor mass,
+  `3` invasion score, `4` tumor area, `5` peak score.
+
+Which *conditions* are drawn is set by `tg_cds` (ViewModes 1–3) and `tg_ecm` (ViewMode 4);
+both are commented in place and meant to be edited. The script also builds a `WholeResults`
+table (`282 × 11`) summarizing every run — see its header for the column definitions.
+
+Unlike the model itself, the analysis script needs **no toolboxes and no GPU**.
+
+### Data format
+
+`RawData.mat` holds a single `282 × 4` cell array `DataCell`, one row per simulated condition:
+
+| Column | Variable | Description |
+| --- | --- | --- |
+| 1 | `ParamTag` | 4-character condition code, `'ABCD'` (see below) |
+| 2 | `DurRecMat` | `6 × 101` time record at $t = 0, 0.5, \dots, 50$: rows are time, `TumMass_tot`, `TumMass_liv`, `Inv_score`, `TumArea`, `PeakScore` |
+| 3 | `Gyrus_data` | `2 × nGyri`: rows are angle $\theta$ and radius |
+| 4 | `Sulcus_data` | `2 × nSulci`: rows are angle $\theta$ and radius |
+
+#### Condition code `'ABCD'`
+
+The code mirrors the scenario switches `CA_cond`, `CTX_cond`, and `ECM_cond` in
+[`main_code.m`](main_code.m).
+
+Character **A** — chemoattractant (CA) configuration:
+
+1. high average, mild gradient (HA & LG)
+2. medium average, medium gradient (MA & MG)
+3. low average, steep gradient (LA & HG)
+4. HA & LG → LA & HG over time (anti-angiogenesis)
+5. LA & HG → HA & LG over time (rapid angiogenesis)
+
+Character **B** — chemotaxis (CTX) strategy, i.e. the weighting applied by
+[`CA_Weight.m`](CA_Weight.m):
+
+1. CA-positive (higher CA enhances chemotaxis)
+2. normal (gradient-based)
+3. CA-negative (higher CA reduces chemotaxis)
+
+Characters **CD** — ECM density index; ECM density = `0.1 × index`.
+
+**Coverage.** Configurations `A = 1..3` were run across the full ECM sweep, index `01`–`30`
+(density 0.1–3.0), for every CTX strategy — 270 runs. The time-varying angiogenesis cases
+`A = 4, 5` were run only at ECM index `10` and `20` — 12 runs. Total 282.
+
 ## File map
 
 **Core loop**
@@ -68,10 +135,19 @@ Enabled by `DurRec = 1` (recorded every `Rec_dT`). For each snapshot it computes
 - [`StarShapeAnalyze.m`](StarShapeAnalyze.m) — mass, area, invasion index, star-shape metrics.
 - [`Starness.m`](Starness.m) — arm-height/base-width "starness" score.
 
+**Deposited data & figures**
+- [`RawData.mat`](RawData.mat) — recorded metrics for all 282 conditions (1.2 MB).
+- [`DataInvestigate.m`](DataInvestigate.m) — replots the result figures from `RawData.mat`.
+
 
 ## Running
 
-Requires MATLAB with the **Image Processing** and **Parallel Computing** (GPU) toolboxes. Open
-[`main_code.m`](main_code.m), set the scenario switches (`CA_cond`, `CTX_cond`, `ECM_cond`) near
-the top, and run. The `%%` section headers let you also step through it cell-by-cell in the
-MATLAB editor.
+**The model.** Requires MATLAB with the **Image Processing** and **Parallel Computing** (GPU)
+toolboxes. Open [`main_code.m`](main_code.m), set the scenario switches (`CA_cond`, `CTX_cond`,
+`ECM_cond`) near the top, and run. The `%%` section headers let you also step through it
+cell-by-cell in the MATLAB editor.
+
+**The figures.** To inspect the published results without re-running the model, run
+[`DataInvestigate.m`](DataInvestigate.m) against the deposited
+[`RawData.mat`](RawData.mat) — no toolboxes or GPU required. See
+[Data availability](#data-availability).
